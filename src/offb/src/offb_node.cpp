@@ -4,6 +4,7 @@
  * Stack and tested in Gazebo SITL
  */
 
+#include <array>
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
@@ -11,6 +12,17 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/ManualControl.h>
+
+double x_kP = 1;
+double x_kD = 5;
+
+double y_kP = 1;
+double y_kD = 5;
+
+double z_kP = 1;
+double z_kD = 5;
+
+std::array<double, 3> setpoint = {4, 5, 10};
 
 mavros_msgs::State current_state;
 void state_cb(const mavros_msgs::State::ConstPtr& msg){
@@ -24,6 +36,30 @@ void pose_cb(const geometry_msgs::PoseStamped msg) {
     current_pose = msg;
 }
 
+double limitCommand(double command, double max) {
+    if(command > max) {
+        return max;
+    } else if(command < -max) {
+        return -max;
+    }
+
+    return command;
+}
+
+std::array<double, 3> pidControl() {
+    geometry_msgs::Point pos = current_pose.pose.position;
+
+    double x_error = setpoint[0] - pos.x;
+    double y_error = setpoint[1] - pos.y;
+    double z_error = setpoint[2] - pos.z;
+
+    double x_command = limitCommand(x_kP * x_error, 3.0);
+    double y_command = limitCommand(y_kP * y_error, 3.0);
+    double z_command = limitCommand(z_kP * z_error, 3.0);
+
+    return {x_command, y_command, z_command};
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "offb_node");
@@ -31,13 +67,14 @@ int main(int argc, char **argv)
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
             ("mavros/state", 10, state_cb);
-    
-    ros::Subscriber pos_sub = nh.subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, pose_cb);
+    ros::Subscriber pos_sub = nh.subscribe<geometry_msgs::PoseStamped>
+            ("mavros/local_position/pose", 10, pose_cb);
 
     ros::Publisher manual_control_pub = nh.advertise<mavros_msgs::ManualControl>
             ("mavros/manual_control/send", 10);
     ros::Publisher cmd_vel_pub = nh.advertise<geometry_msgs::Twist>
             ("mavros/setpoint_velocity/cmd_vel_unstamped", 10);
+    
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
             ("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
@@ -71,7 +108,7 @@ int main(int argc, char **argv)
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0;
     cmd_vel.linear.y = 0;
-    cmd_vel.linear.z = 1;
+    cmd_vel.linear.z = 0;
     cmd_vel.angular.x = 0;
     cmd_vel.angular.y = 0;
     cmd_vel.angular.z = 0;
@@ -94,16 +131,12 @@ int main(int argc, char **argv)
                 }
                 last_request = ros::Time::now();
             }
-        
-        double kP = 10;
 
-        double setpoint = 5;
+        std::array<double, 3> command = pidControl();
 
-        double error = setpoint - current_pose.pose.position.z;
-
-        double command = kP * error;
-
-        cmd_vel.linear.z = command;
+        cmd_vel.linear.x = command[0];
+        cmd_vel.linear.y = command[1];
+        cmd_vel.linear.z = command[2];
 
         manual_control_pub.publish(control);
 

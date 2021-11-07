@@ -1,0 +1,58 @@
+Traceback (most recent call last):
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+    from pymavlink.generator import mavgen
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+    from future import standard_library
+ImportError: No module named future
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+        from pymavlink.generator import mavgen
+from pymavlink.generator import mavgen
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+    from future import standard_library
+    ImportError: No module named futurefrom future import standard_library
+
+ImportError: No module named future
+Traceback (most recent call last):
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+    from pymavlink.generator import mavgen
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+    from future import standard_library
+ImportError: No module named future
+Traceback (most recent call last):
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+    from pymavlink.generator import mavgen
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+    from future import standard_library
+ImportError: No module named future
+Traceback (most recent call last):
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+    from pymavlink.generator import mavgen
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+    from future import standard_library
+ImportError: No module named future
+make[2]: *** [ualberta-v2.0-cxx-stamp] Error 1
+make[1]: *** [CMakeFiles/ualberta.xml-v2.0.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+make[2]: *** [paparazzi-v2.0-cxx-stamp] Error 1
+make[2]: *** [include/v1.0/ASLUAV/ASLUAV.h] Error 1
+make[1]: *** [CMakeFiles/paparazzi.xml-v2.0.dir/all] Error 2
+make[1]: *** [CMakeFiles/ASLUAV.xml-v1.0.dir/all] Error 2
+make[2]: *** [icarous-v2.0-cxx-stamp] Error 1
+make[2]: *** [matrixpilot-v2.0-cxx-stamp] Error 1
+make[1]: *** [CMakeFiles/icarous.xml-v2.0.dir/all] Error 2
+make[1]: *** [CMakeFiles/matrixpilot.xml-v2.0.dir/all] Error 2
+make[2]: *** [include/v1.0/icarous/icarous.h] Error 1
+make[1]: *** [CMakeFiles/icarous.xml-v1.0.dir/all] Error 2
+Traceback (most recent call last):
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/tools/mavgen.py", line 16, in <module>
+    from pymavlink.generator import mavgen
+  File "/home/mihirlaud/catkin_ws/src/mavlink/pymavlink/generator/mavgen.py", line 26, in <module>
+    from future import standard_library
+ImportError: No module named future
+make[2]: *** [standard-v2.0-cxx-stamp] Error 1
+make[1]: *** [CMakeFiles/standard.xml-v2.0.dir/all] Error 2
+make: *** [all] Error 2

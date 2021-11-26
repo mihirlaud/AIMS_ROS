@@ -1,6 +1,0 @@
-offb
-/home/mihirlaud/catkin_ws/devel/.private/offb/cmake.lock /home/mihirlaud/catkin_ws/devel/./cmake.lock
-/home/mihirlaud/catkin_ws/devel/.private/offb/share/offb/cmake/offbConfig-version.cmake /home/mihirlaud/catkin_ws/devel/share/offb/cmake/offbConfig-version.cmake
-/home/mihirlaud/catkin_ws/devel/.private/offb/share/offb/cmake/offbConfig.cmake /home/mihirlaud/catkin_ws/devel/share/offb/cmake/offbConfig.cmake
-/home/mihirlaud/catkin_ws/devel/.private/offb/lib/pkgconfig/offb.pc /home/mihirlaud/catkin_ws/devel/lib/pkgconfig/offb.pc
-/home/mihirlaud/catkin_ws/devel/.private/offb/lib/offb/offb_node /home/mihirlaud/catkin_ws/devel/lib/offb/offb_node

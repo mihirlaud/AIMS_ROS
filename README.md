@@ -6,7 +6,7 @@ This flight controller was made by me, Mihir Laud, an undergraduate student at P
 
 It was built for a custom quadrotor platform that uses the Pixhawk 4 Mini as its onboard flight computer. The controller is built on the ROS platform, specifically on ROS Melodic in Ubuntu 18.04. It can take, as input, a point in 3D space and have the quadrotor navigate to that point using velocity commands and PID control.
 
-A demonstration of the software running on a simulated drone can be found [here](https://youtu.be/Y0Lm5s196Io).
+A demonstration of the point-to-point movement running on a simulated drone can be found [here](https://youtu.be/Y0Lm5s196Io). Another demo of the drone navigating to multiple waypoints can be found [here](https://youtu.be/-N6l_FVbApk).
 
 ## Installation
 

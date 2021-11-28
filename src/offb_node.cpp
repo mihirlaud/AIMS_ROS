@@ -5,9 +5,16 @@
  */
 
 #include <array>
+#include <cmath>
+#include <fstream>
+#include <string>
+#include <vector>
+
 #include <ros/ros.h>
+
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
+
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
@@ -34,9 +41,14 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg){
     current_state = *msg;
 }
 
+int t = 0;
+
 geometry_msgs::PoseStamped current_pose;
 void pose_cb(const geometry_msgs::PoseStamped msg) {
-    ROS_INFO("x: %lf\ty: %lf\tz: %lf", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+    if(msg.header.stamp.sec - t > 1) {
+        t = msg.header.stamp.sec;
+        ROS_INFO("x: %.3lf y: %.3lf z: %.3lf", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+    }
     current_pose = msg;
 }
 
@@ -68,13 +80,45 @@ std::array<double, 3> pidControl() {
     return {x_command, y_command, z_command};
 }
 
+double distanceToTarget(std::array<double, 3> target) {
+    geometry_msgs::Point pos = current_pose.pose.position;
+
+    return sqrt(pow(target[0] - pos.x, 2) + pow(target[1] - pos.y, 2) + pow(target[2] - pos.z, 2));
+}
+
+std::vector<std::array<double, 3>> path;
+int idx = 0;
+
 int main(int argc, char **argv)
 {
-    if(argc == 4) {
-        setpoint = {std::stod(argv[1]), std::stod(argv[2]), std::stod(argv[3])};
-    } else {
-        setpoint = {0, 0, 1};
+
+    std::ifstream ifs;
+    ifs.open("src/offb/points.txt", std::ifstream::in);
+
+    std::array<double, 3> point;
+    int i = 0;
+    std::string str;
+    char c = ifs.get();
+
+    while (ifs.good()) {
+        if(c == ' ' || c == '\n') {
+            point[i] = std::stod(str);
+            i++;
+            if(i > 2) {
+                path.push_back(point);
+                i = 0;
+            }
+            str.clear();
+        } else {
+            str.push_back(c);
+        }
+
+        c = ifs.get();
     }
+
+    setpoint = path.at(idx);
+
+    ifs.close();
 
     ros::init(argc, argv, "offb_node");
     ros::NodeHandle nh;
@@ -158,6 +202,11 @@ int main(int argc, char **argv)
         manual_control_pub.publish(control);
 
         cmd_vel_pub.publish(cmd_vel);
+
+        if(distanceToTarget(setpoint) < 0.1 && idx < path.size() - 1) {
+            idx++;
+            setpoint = path.at(idx);
+        }
 
         ros::spinOnce();
         rate.sleep();

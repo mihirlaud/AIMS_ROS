@@ -203,9 +203,15 @@ int main(int argc, char **argv)
 
         cmd_vel_pub.publish(cmd_vel);
 
-        if(distanceToTarget(setpoint) < 0.1 && idx < path.size() - 1) {
+        if(distanceToTarget(setpoint) < 0.05) {
             idx++;
-            setpoint = path.at(idx);
+            ROS_INFO("Waypoint %i reached...", idx);
+            if(idx < path.size()) {
+                setpoint = path.at(idx);
+            } else {
+                ROS_INFO("End of path reached!");
+                break;
+            }
         }
 
         ros::spinOnce();

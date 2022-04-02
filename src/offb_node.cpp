@@ -58,7 +58,7 @@ int t = 0;
 // to log once every 2 seconds
 geometry_msgs::PoseStamped current_pose;
 void pose_cb(const geometry_msgs::PoseStamped msg) {
-    if(msg.header.stamp.sec - t > 1) {
+    if(msg.header.stamp.sec - t > 0.2) {
         t = msg.header.stamp.sec;
         ROS_INFO("x: %.3lf y: %.3lf z: %.3lf", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
     }
@@ -89,9 +89,9 @@ std::array<double, 3> pidControl() {
 
     // Calculate individual commands using PD constants, error, and derivative
     // Limit command to 3.0 m/s
-    double x_command = limitCommand(x_kP * x_error + x_kD * (x_error - x_prev_error), 3.0);
-    double y_command = limitCommand(y_kP * y_error + y_kD * (y_error - y_prev_error), 3.0);
-    double z_command = limitCommand(z_kP * z_error + z_kD * (z_error - z_prev_error), 3.0);
+    double x_command = limitCommand(x_kP * x_error + x_kD * (x_error - x_prev_error), 1.0);
+    double y_command = limitCommand(y_kP * y_error + y_kD * (y_error - y_prev_error), 1.0);
+    double z_command = limitCommand(z_kP * z_error + z_kD * (z_error - z_prev_error), 1.0);
 
     // Update previous error values for next loop
     x_prev_error = x_error;
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
             ("mavros/state", 10, state_cb);
     ros::Subscriber pos_sub = nh.subscribe<geometry_msgs::PoseStamped>
-            ("mavros/local_position/pose", 10, pose_cb);
+            ("mocap_pos", 10, pose_cb);
 
     // Create publishers to manual control and velocity command
     ros::Publisher manual_control_pub = nh.advertise<mavros_msgs::ManualControl>

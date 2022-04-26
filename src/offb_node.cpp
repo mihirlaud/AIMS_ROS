@@ -23,6 +23,7 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
+#include <mavros_msgs/Thrust.h>
 #include <mavros_msgs/ManualControl.h>
 
 // Define PD constants for controller
@@ -89,9 +90,9 @@ std::array<double, 3> pidControl() {
 
     // Calculate individual commands using PD constants, error, and derivative
     // Limit command to 3.0 m/s
-    double x_command = limitCommand(x_kP * x_error + x_kD * (x_error - x_prev_error), 1.0);
-    double y_command = limitCommand(y_kP * y_error + y_kD * (y_error - y_prev_error), 1.0);
-    double z_command = limitCommand(z_kP * z_error + z_kD * (z_error - z_prev_error), 1.0);
+    double x_command = limitCommand(x_kP * x_error + x_kD * (x_error - x_prev_error), 0.1);
+    double y_command = limitCommand(y_kP * y_error + y_kD * (y_error - y_prev_error), 0.1);
+    double z_command = limitCommand(z_kP * z_error + z_kD * (z_error - z_prev_error), 0.1);
 
     // Update previous error values for next loop
     x_prev_error = x_error;
@@ -169,13 +170,15 @@ int main(int argc, char **argv)
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
             ("mavros/state", 10, state_cb);
     ros::Subscriber pos_sub = nh.subscribe<geometry_msgs::PoseStamped>
-            ("mocap_pos", 10, pose_cb);
+            ("/mavros/vision_pose/pose", 10, pose_cb);
 
     // Create publishers to manual control and velocity command
     ros::Publisher manual_control_pub = nh.advertise<mavros_msgs::ManualControl>
             ("mavros/manual_control/send", 10);
     ros::Publisher cmd_vel_pub = nh.advertise<geometry_msgs::Twist>
             ("mavros/setpoint_velocity/cmd_vel_unstamped", 10);
+    ros::Publisher thrust_pub = nh.advertise<mavros_msgs::Thrust>
+            ("mavros/setpoint_attitude/thrust", 10);
     
     // Create service clients for arming drone and setting mode to offboard
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
@@ -184,7 +187,7 @@ int main(int argc, char **argv)
             ("mavros/set_mode");
 
     //the setpoint publishing rate MUST be faster than 2Hz
-    ros::Rate rate(20.0);
+    ros::Rate rate(50.0);
 
     // wait for FCU connection
     while(ros::ok() && !current_state.connected){
@@ -194,11 +197,11 @@ int main(int argc, char **argv)
 
     // Create request for switching to offboard flight mode
     mavros_msgs::SetMode offb_set_mode;
-    offb_set_mode.request.custom_mode = mavros_msgs::State::MODE_PX4_OFFBOARD;
+    offb_set_mode.request.custom_mode = "OFFBOARD";
 
-    // Create request to arm drone motors
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
+
 
     // Store current time for use later with limiting requests to
     // once every 5 seconds
@@ -208,9 +211,10 @@ int main(int argc, char **argv)
     // but publishing to manual control topic is still necessary
     // for autonomous flight for unknown reasons
     mavros_msgs::ManualControl control;
-    control.x = 0;
-    control.y = 0;
-    control.z = 0;
+    control.header.stamp = ros::Time::now();
+    control.x = 1;
+    control.y = 1;
+    control.z = 1;
     control.r = 0;
 
     // Command velocity struct. Includes both linear and angular 
@@ -224,55 +228,85 @@ int main(int argc, char **argv)
     cmd_vel.angular.y = 0;
     cmd_vel.angular.z = 0;
 
-    // Main logic loop
-    while(ros::ok()){
-        // If the drone is not in offboard flight mode, switch to offboard
-        // Request once every 5 seconds
-        if( current_state.mode != mavros_msgs::State::MODE_PX4_OFFBOARD && (ros::Time::now() - last_request > ros::Duration(5.0))){
-			if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent){
-				// Log once offboard enabled
-                ROS_INFO("Offboard enabled");
-			}
-            // Update request time
-			last_request = ros::Time::now();
-        }
-
-        // If drone is not armed, request arming motors
-        // Request once every 5 seconds
-        if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0))){
-            if( arming_client.call(arm_cmd) &&
-                arm_cmd.response.success){
-                    // Log once armed
-                    ROS_INFO("Vehicle armed");
-                }
-                // Update request time
-                last_request = ros::Time::now();
-            }
-
+    //send a few setpoints before starting
+    for(int i = 200; ros::ok() && i > 0; --i){
         // Get velocity commands
         std::array<double, 3> command = pidControl();
+        //ROS_INFO("%lf %lf %lf", command[0], command[1], command[2]);
 
-        // If altitude is less than 0.75 m, do not move horizontally
+        /*// If altitude is less than 0.75 m, do not move horizontally
         // This prevents drone from hitting the ground when taking off
-        if(current_pose.pose.position.z > 0.75) {
+        if(current_pose.pose.position.z > 0.5) {
             // Set x and y velocity commands
             cmd_vel.linear.x = command[0];
             cmd_vel.linear.y = command[1];
         } else {
             cmd_vel.linear.x = 0;
             cmd_vel.linear.y = 0;
-        }
+        }*/
 
         // Set z velocity command
         cmd_vel.linear.z = command[2];
+
+        manual_control_pub.publish(control);
+        cmd_vel_pub.publish(cmd_vel);
+
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+
+    // Main logic loop
+    while(ros::ok()){
+        if( !current_state.armed && (ros::Time::now() - last_request > ros::Duration(5.0))){
+            if( arming_client.call(arm_cmd) && arm_cmd.response.success){
+                ROS_INFO("Vehicle armed");
+            }
+            last_request = ros::Time::now();
+        }
+
+        if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0))){
+            if( set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent){
+                ROS_INFO("Offboard control");
+            }
+            last_request = ros::Time::now();
+        } 
+
+        /*mavros_msgs::Thrust thrust;
+        thrust.thrust = 0.75;
+        thrust_pub.publish(thrust);
+*/
+        // Get velocity commands
+        std::array<double, 3> command = pidControl();
+        //ROS_INFO("%lf %lf %lf", command[0], command[1], command[2]);
+
+        /*// If altitude is less than 0.75 m, do not move horizontally
+        // This prevents drone from hitting the ground when taking off
+        if(current_pose.pose.position.z > 0.5) {
+            // Set x and y velocity commands
+            cmd_vel.linear.x = command[0];
+            cmd_vel.linear.y = command[1];
+        } else {
+            cmd_vel.linear.x = 0;
+            cmd_vel.linear.y = 0;
+        }*/
+
+        // Set z velocity command
+        cmd_vel.linear.z = command[2];
+
+        control.header.stamp = ros::Time::now();
+        control.x = 1;
+        control.y = 1;
+        control.z = 1;
+        control.r = 0;
 
         // Publish manual control and velocity command
         manual_control_pub.publish(control);
         cmd_vel_pub.publish(cmd_vel);
 
-        // If drone is less than 2 inches away from target,
+        // If drone is less than 4 inches away from target,
         // move to next waypoint in the path
-        if(distanceToTarget(setpoint) < 0.05) {
+        if(distanceToTarget(setpoint) < 0.1) {
             // Increment pointer
             idx++;
 
